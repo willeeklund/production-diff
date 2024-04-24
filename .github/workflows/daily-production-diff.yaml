@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "45 7 * * 1-5" # Schedule for 8:45 AM, Monday to Friday
-  push:
-    branches:
-      - main
 
 jobs:
   production-diff:

@@ -1,0 +1,49 @@
+name: Daily job to see the difference between what is merged and what is deployed to production
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 7 * * 1-5" # Schedule for 8:45 AM, Monday to Friday
+  push:
+    branches:
+      - main
+
+jobs:
+  production-diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: 'production-diff'
+          fetch-depth: 1
+
+      - name: Checkout "yourGithubOrg/repoName1"
+        uses: actions/checkout@v4
+        with:
+          path: 'firebase-service'
+          repository: yourGithubOrg/repoName1
+          token: ${{ secrets.GLOBAL_ACCESS_KEY }}
+          fetch-depth: 50
+
+      - name: Checkout "yourGithubOrg/repoName2"
+        uses: actions/checkout@v4
+        with:
+          path: 'piq-service'
+          repository: yourGithubOrg/repoName2
+          token: ${{ secrets.GLOBAL_ACCESS_KEY }}
+          fetch-depth: 50
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Compare latest merged code to version in production
+        working-directory: ${{ github.workspace }}/production-diff
+        env:
+          SLACK_DEPLOYMENT_WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENT_WEBHOOK_URL }}
+        run: |
+          yarn install
+          yarn git:compare:prod --slack

@@ -1,0 +1,17 @@
+{
+  "name": "production-diff",
+  "version": "0.0.0",
+  "description": "Understand which code changes have not yet reached production",
+  "private": true,
+  "engines": {
+    "node": "20.x.x"
+  },
+  "scripts": {
+    "release:notes": "npx ts-node ./release-notes.ts %@",
+    "git:compare:prod": "npx ts-node ./compare-production-diff.ts"
+  },
+  "dependencies": {
+    "colors": "1.4.0",
+    "zx": "^7.2.3"
+  }
+}

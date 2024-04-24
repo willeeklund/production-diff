@@ -42,11 +42,15 @@ export type ConfigParts = {
 
 const configParts: ConfigParts = {
     'repoName1': {
+        // Folder path is relative to the folder above "production-diff" folder.
+        // -- codeFolder
+        // ----- production-diff
+        // ----- repoName1
         folder: 'repoName1',
         stableCodeReference: 'origin/main',
         versionUrl: 'https://www.yourDomain.com/version.json',
     },
-
+/*
     // -- Below are examples with multiple deployable parts in one Git repo --
     'repoName2DeployableA': {
         folder: 'repoName2', // This Git repo contains multiple individually deployable parts
@@ -69,6 +73,7 @@ const configParts: ConfigParts = {
         // The script will pick up the latest semver version, for instance "ios.v2.2.1"
         tagFormat: 'ios.v*',
     },
+*/
 }
 
 export const getConfigForAllParts = () => {

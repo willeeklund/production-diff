@@ -1,0 +1,21 @@
+FROM public.ecr.aws/docker/library/node:16.15.0-bullseye as builder
+
+# The Git commit used is sent in from the CI/CD pipeline as build arguments to the Docker build command
+ARG CODE_VERSION_COMMIT
+
+WORKDIR /app/
+COPY . /app/
+
+# This is the `version.json` file containing the Git commit which was used to build the Docker image
+RUN echo "{ \"commit\": \"${CODE_VERSION_COMMIT}\" }" > public/version.json
+
+RUN yarn install
+RUN yarn build
+
+
+# Create a minimal image with the built frontend application
+FROM public.ecr.aws/nginx/nginx:1.23.1-alpine
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/build/ /usr/share/nginx/html/

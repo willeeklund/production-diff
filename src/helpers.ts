@@ -19,29 +19,59 @@ const hashLength = 8;
 
 const getProductionCommit = async ({folder, versionUrl, tagFormat}: {folder: string, versionUrl?: string, tagFormat?: string}) => {
   if (versionUrl) {
-    const versionJson: {commit: string} = await fetch(versionUrl).then((res) => res.json());
-    return shortCommit(folder, versionJson.commit);
+    try {
+      const res = await fetch(versionUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch ${versionUrl}: ${res.status} ${res.statusText}`);
+      }
+      const versionJson: {commit: string} = await res.json();
+      if (!versionJson.commit) {
+        throw new Error(`No commit field in response from ${versionUrl}`);
+      }
+      const shortHash = await shortCommit(folder, versionJson.commit);
+      return shortHash;
+    } catch (e) {
+      throw new Error(`Failed to get production commit from ${versionUrl}: ${e}`);
+    }
   }
 
-  const { stdout: latestGitTag } =
-    await exec`cd ../${folder} && git tag --sort=version:refname | grep ${tagFormat ?? 'v*'} | tail -n 1`;
-  return latestGitTag.trim()
+  try {
+    const { stdout: latestGitTag } =
+      await exec`cd ../${folder} && git tag --sort=version:refname | grep ${tagFormat ?? 'v*'} | tail -n 1`;
+    const trimmed = latestGitTag.trim();
+    return trimmed
+  } catch (e) {
+    throw new Error(`Failed to get production commit for folder ${folder}: ${e}`);
+  }
 };
 
 const getCommitForReference = async ({folder, reference}: {folder: string, reference: string})  => {
-  const { stdout: commit } =
-    await exec`cd ../${folder} && git show -s --format="%h" ${reference}`;
-  return commit.trim()
+  try {
+    const { stdout: commit } =
+      await exec`cd ../${folder} && git show -s --format="%h" ${reference}`;
+    const trimmed = commit.trim();
+    return trimmed
+  } catch (e) {
+    throw new Error(`Failed to get commit for reference ${reference} in folder ${folder}: ${e}`);
+  }
 };
 
 const gitFetchFolder = async (folder: string) => {
-  await exec`cd ../${folder} && git fetch --quiet`;
+  try {
+    await exec`cd ../${folder} && git fetch --quiet`;
+  } catch (e) {
+    throw new Error(`Failed to fetch repo for folder ${folder}: ${e}`);
+  }
 };
 
 const getMergeBaseCommit = async (folder: string, productionCommit: string, startReference: string) => {
-  const { stdout: mergeBaseProd } =
-    await exec`cd ../${folder} && git merge-base ${productionCommit} ${startReference}`;
-  return mergeBaseProd.slice(0, hashLength);
+  try {
+    const { stdout: mergeBaseProd } =
+      await exec`cd ../${folder} && git merge-base ${productionCommit} ${startReference}`;
+    return mergeBaseProd.slice(0, hashLength);
+  } catch (e) {
+    throw new Error(`Failed to get merge base for folder ${folder}: ${e}`);
+  }
 };
 
 const describeCommit = async (folder: string, commit: string) => {
@@ -62,24 +92,37 @@ const describeCommit = async (folder: string, commit: string) => {
 }
 
 const shortCommit = async (folder: string, commit: string) => {
-  const { stdout: shortCommit } = await exec`cd ../${folder} && git rev-parse --short ${commit}`;
-  return shortCommit.trim();
+  try {
+    const { stdout: shortCommit } = await exec`cd ../${folder} && git rev-parse --short ${commit}`;
+    return shortCommit.trim();
+  } catch (e) {
+    throw new Error(`Failed to get short commit for ${commit} in folder ${folder}: ${e}`);
+  }
 }
 
 const getGitLogSinceCommit = async (
   {folder, commit, startReference, onlySubfolder}: {folder: string, commit: string, startReference: string, onlySubfolder?: string}
 ): Promise<{gitLogSinceCommit: string, tickets: Set<string>}> => {
-  onlySubfolder = onlySubfolder ? `${onlySubfolder}` : '';
-  const { stdout: gitLogSinceCommit } =
-    await exec`cd ../${folder} && git log ${commit}..${
-      startReference
-    } --pretty=format:"%ad %s @ %an" --date=format:"%Y-%m-%d" --reverse ${onlySubfolder}`;
-  const { stdout: fullGitLog } =
-    await exec`cd ../${folder} && git log ${commit}..${
-      startReference
-    } --all --reverse ${onlySubfolder}`;
+  try {
+    let gitLogSinceCommit: string;
+    let fullGitLog: string;
 
-  return {gitLogSinceCommit, tickets: ticketsFromString(fullGitLog)};
+    if (onlySubfolder) {
+      const result1 = await exec`cd ../${folder} && git log ${commit}..${startReference} --pretty=format:"%ad %s @ %an" --date=format:"%Y-%m-%d" --reverse -- ${onlySubfolder}`;
+      gitLogSinceCommit = result1.stdout;
+      const result2 = await exec`cd ../${folder} && git log ${commit}..${startReference} --all --reverse -- ${onlySubfolder}`;
+      fullGitLog = result2.stdout;
+    } else {
+      const result1 = await exec`cd ../${folder} && git log ${commit}..${startReference} --pretty=format:"%ad %s @ %an" --date=format:"%Y-%m-%d" --reverse`;
+      gitLogSinceCommit = result1.stdout;
+      const result2 = await exec`cd ../${folder} && git log ${commit}..${startReference} --all --reverse`;
+      fullGitLog = result2.stdout;
+    }
+
+    return {gitLogSinceCommit, tickets: ticketsFromString(fullGitLog)};
+  } catch (e) {
+    throw new Error(`Failed to get git log for folder ${folder}: ${e}`);
+  }
 };
 
 export interface DiffResult {

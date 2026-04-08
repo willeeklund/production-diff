@@ -4,14 +4,14 @@
   "description": "Understand which code changes have not yet reached production",
   "private": true,
   "engines": {
-    "node": "20.x.x"
+    "node": "25.x.x"
   },
   "scripts": {
-    "release:notes": "npx ts-node ./src/release-notes.ts %@",
+    "release:notes": "npx ts-node ./src/release-notes.ts --",
     "git:compare:prod": "npx ts-node ./src/compare-production-diff.ts"
   },
   "dependencies": {
     "colors": "1.4.0",
-    "zx": "^7.2.3"
+    "zx": "8.8.5"
   }
 }

@@ -1,58 +1,112 @@
 # Production diff scripts
 
-Here we have ways to understand what are the parts where we have merged code but we have not yet put it in production.
+Understand what code changes have been merged but not yet deployed to production. Track deployments across multiple repositories or individual parts within a monorepo.
 
-There are currently two parts:
-* See the diff for all our deployable parts
-* See the diff for an individual part
+## Quick Start
 
-## Set up repo
+### Prerequisites
+- Node.js 25.x and Yarn
 
-#### Prerequisities
+### Setup
 
-Make sure you have `npm` or `yarn` installed.
-```
-yarn -v
-yarn install
-```
+1. **Install dependencies:**
+   ```bash
+   yarn install
+   ```
 
-#### Copy template for repo definitions
-```
-cp repo-config.example.ts repo-config.ts
-```
+2. **Configure your deployable parts:**
+   Create a `config.ts` file in the root directory:
+   ```bash
+   cp config.ts.example config.ts  # or create it manually
+   ```
+   
+   Edit `config.ts` and add your repositories and version tracking URLs:
+   ```typescript
+   export const configParts: ConfigParts = {
+     'myapp': {
+       folder: 'myapp',
+       stableCodeReference: 'origin/main',
+       versionUrl: 'https://myapp.example.com/version.json',
+     }
+   };
+   ```
 
-Then fill in the details about your first repo in `repo-config.ts`.
+   **Note:** `config.ts` is gitignored — safe to customize locally without affecting the repo.
 
-## Full diff report
-There is a daily job running to generate the full diff and send a Slack message to the channel you have set up with the webhook sent in as `SLACK_DEPLOYMENT_WEBHOOK_URL`.
+## Usage
 
-This can also be run locally (make sure the relevant Git repos for deployable parts all live in the same parent folder):
+### View all deployable parts
+Compare production with your stable and development branches across all configured parts:
 
-```
+```bash
 yarn git:compare:prod
 ```
 
-## Release notes for individual part
-To see the diff for an individual part, you can run:
+**Output:** Shows git logs between:
+- Production version → Stable branch (`stableCodeReference`)
+- Stable branch → Development branch (`latestCodeReference`, optional)
 
+**Layout:** All repos should be in the same parent folder:
 ```
-yarn release:notes <name-of-part-to-deploy>
+parent-folder/
+├── production-diff/
+└── myapp/
 ```
 
-When we do production releases this output may be useful to paste in to the Github UI as release notes.
-
-As part of the CI job when we have started production release, this report will be gathered and sent as a Slack message (to the same channel). This will make it possible for us and other people in the organisation to know when we make releases and what changes are going out.
-
-## Incorporate with a Github workflow setup
-When building your Docker image for your application, send in the Git commit which was used.
-
+**Optional:** Send to Slack with:
+```bash
+SLACK_DEPLOYMENT_WEBHOOK_URL="https://hooks.slack.com/..." yarn git:compare:prod --slack
 ```
+
+### Generate release notes for one part
+Get the diff for a specific deployable part:
+
+```bash
+yarn release:notes myapp
+```
+
+**Optional:** Send to Slack (useful during production releases):
+```bash
+SLACK_DEPLOYMENT_WEBHOOK_URL="https://hooks.slack.com/..." yarn release:notes myapp --slack
+```
+
+You can paste the output into GitHub release notes.
+
+## Configuration Guide
+
+### Version tracking options
+
+**Option 1: Public version.json file (recommended)**
+If your app serves a `version.json` file publicly:
+```typescript
+versionUrl: 'https://myapp.example.com/version.json'
+```
+
+The file should contain:
+```json
+{
+  "commit": "abc123def456"
+}
+```
+
+To expose this from Docker, pass the commit as a build argument:
+```yaml
 - name: Build and push
-    uses: docker/build-push-action@v5
-    with:
-        build-args: CODE_VERSION_COMMIT=${{ github.sha }}
+  uses: docker/build-push-action@v5
+  with:
+    build-args: CODE_VERSION_COMMIT=${{ github.sha }}
 ```
 
-See `CODE_VERSION_COMMIT` sent in as a build argument above.
+Then reference in your Dockerfile (see `Dockerfile.example`).
 
-To expose that as a public file, see the example file `Dockerfile.example`.
+**Option 2: Git tags (for non-web deployments)**
+For native apps or services without a public URL, use git tags:
+```typescript
+tagFormat: 'myapp.v*'  // picks latest semver tag like "myapp.v1.2.3"
+```
+
+## Automation
+
+This tool works well with CI/CD pipelines:
+- Run `yarn git:compare:prod --slack` daily to track what's undeployed
+- Run `yarn release:notes <part> --slack` during deployments for transparency

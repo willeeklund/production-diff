@@ -15,12 +15,12 @@ Understand what code changes have been merged but not yet deployed to production
    ```
 
 2. **Configure your deployable parts:**
-   Create a `config.ts` file in the root directory:
+   Create a `repo-config.ts` file in the root directory:
    ```bash
-   cp config.ts.example config.ts  # or create it manually
+   cp repo-config.example.ts repo-config.ts  # or create it manually
    ```
    
-   Edit `config.ts` and add your repositories and version tracking URLs:
+   Edit `repo-config.ts` and add your repositories and version tracking URLs:
    ```typescript
    export const configParts: ConfigParts = {
      'myapp': {
@@ -31,7 +31,7 @@ Understand what code changes have been merged but not yet deployed to production
    };
    ```
 
-   **Note:** `config.ts` is gitignored — safe to customize locally without affecting the repo.
+   **Note:** `repo-config.ts` is gitignored — safe to customize locally without affecting the repo.
 
 ## Usage
 

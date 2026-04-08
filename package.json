@@ -7,8 +7,8 @@
     "node": "20.x.x"
   },
   "scripts": {
-    "release:notes": "npx ts-node ./release-notes.ts %@",
-    "git:compare:prod": "npx ts-node ./compare-production-diff.ts"
+    "release:notes": "npx ts-node ./src/release-notes.ts %@",
+    "git:compare:prod": "npx ts-node ./src/compare-production-diff.ts"
   },
   "dependencies": {
     "colors": "1.4.0",

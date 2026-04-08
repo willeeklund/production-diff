@@ -1,1 +1,3 @@
 node_modules/
+repo-config.ts
+.DS_Store

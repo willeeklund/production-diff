@@ -6,6 +6,23 @@ There are currently two parts:
 * See the diff for all our deployable parts
 * See the diff for an individual part
 
+## Set up repo
+
+#### Prerequisities
+
+Make sure you have `npm` or `yarn` installed.
+```
+yarn -v
+yarn install
+```
+
+#### Copy template for repo definitions
+```
+cp repo-config.example.ts repo-config.ts
+```
+
+Then fill in the details about your first repo in `repo-config.ts`.
+
 ## Full diff report
 There is a daily job running to generate the full diff and send a Slack message to the channel you have set up with the webhook sent in as `SLACK_DEPLOYMENT_WEBHOOK_URL`.
 

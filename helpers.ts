@@ -45,16 +45,20 @@ const getMergeBaseCommit = async (folder: string, productionCommit: string, star
 };
 
 const describeCommit = async (folder: string, commit: string) => {
-  const {
-    stdout: describe,
-    stderr,
-  } = await exec`cd ../${folder} && git describe --tags --exact-match ${commit}`;
+  try {
+    const {
+      stdout: describe,
+      stderr,
+    } = await exec`cd ../${folder} && git describe --tags --exact-match ${commit}`;
 
-  if (stderr) {
+    if (stderr) {
+      return commit;
+    }
+
+    return describe.trim();
+  } catch (e) {
     return commit;
   }
-
-  return describe.trim();
 }
 
 const shortCommit = async (folder: string, commit: string) => {
